@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dissertation Agent</title>
+<script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f5f5f4;
+    --bg3: #eeede9;
+    --border: #e0ddd6;
+    --border2: #ccc9c0;
+    --text: #1a1916;
+    --text2: #6b6860;
+    --text3: #9c9a94;
+    --accent: #2d5fa6;
+    --accent-bg: #e8f0fc;
+    --radius: 6px;
+    --radius-lg: 10px;
+    --success-bg: #eaf3de;
+    --success: #3b6d11;
+  }
+
+  body {
+    font-family: -apple-system, "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.5;
+    overflow-x: hidden;
+  }
+
+  /* ── API KEY SCREEN ── */
+  #key-screen {
+    padding: 24px 16px;
+  }
+  .logo {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .logo-sub {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 20px;
+  }
+  .key-label {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+  .key-input-row { display: flex; gap: 6px; }
+  .key-input-row input {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: monospace;
+    color: var(--text);
+    background: var(--bg);
+  }
+  .key-input-row input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .key-note {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 8px;
+  }
+  .key-note a { color: var(--accent); text-decoration: none; }
+
+  /* ── MAIN APP ── */
+  #app { display: none; }
+
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text2);
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: var(--bg);
+  }
+
+  .panel { padding: 14px 14px 80px; }
+
+  .field { margin-bottom: 12px; }
+  .lbl {
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  input[type="text"], textarea, select {
+    width: 100%;
+    padding: 8px 9px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.5;
+  }
+  input[type="text"]:focus, textarea:focus, select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+  }
+  textarea { resize: vertical; min-height: 72px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg2);
+    transition: background 0.15s;
+  }
+  .upload-zone:hover { background: var(--bg3); }
+  .upload-zone input { display: none; }
+  .upload-zone-lbl { font-size: 12px; color: var(--text2); }
+  .thumb-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .thumb {
+    position: relative;
+    width: 56px; height: 56px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb-rm {
+    position: absolute; top: 2px; right: 2px;
+    width: 16px; height: 16px;
+    background: rgba(0,0,0,0.6);
+    border: none; border-radius: 50%;
+    cursor: pointer; color: white;
+    font-size: 10px; line-height: 16px; text-align: center;
+  }
+
+  /* Word integration row */
+  .word-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    background: var(--accent-bg);
+    border-radius: var(--radius);
+    align-items: center;
+  }
+  .word-row-label { font-size: 11px; color: var(--accent); font-weight: 500; flex: 1; }
+  .btn-word {
+    padding: 5px 10px;
+    font-size: 11px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .btn-word:hover { background: #1f4a8a; }
+  .btn-word:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Buttons */
+  .btn-run {
+    width: 100%;
+    padding: 10px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-run:hover { background: #1f4a8a; }
+  .btn-run:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; }
+
+  .status {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 8px;
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .spin {
+    width: 12px; height: 12px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Output */
+  .out-card {
+    margin-top: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .out-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+  }
+  .out-hdr-title { font-size: 12px; font-weight: 600; color: var(--text); }
+  .out-hdr-btns { display: flex; gap: 6px; }
+  .btn-sm {
+    padding: 4px 10px;
+    font-size: 11px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text2);
+    font-weight: 500;
+  }
+  .btn-sm:hover { background: var(--bg3); color: var(--text); }
+
+  /* Insert-to-Word button */
+  .btn-insert {
+    padding: 4px 10px;
+    font-size: 11px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .btn-insert:hover { background: #1f4a8a; }
+  .btn-insert:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .out-body {
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text);
+    max-height: 360px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+
+  /* Refine */
+  .refine-wrap {
+    margin-top: 10px;
+    display: flex;
+    gap: 6px;
+  }
+  .refine-wrap input {
+    flex: 1;
+    font-size: 12px;
+  }
+  .refine-wrap button {
+    padding: 8px 12px;
+    font-size: 12px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .refine-wrap button:hover { background: var(--bg3); }
+  .refine-wrap button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Fixed footer */
+  .footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    padding: 8px 14px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-name { font-size: 11px; color: var(--text3); }
+  .footer-logout {
+    font-size: 11px;
+    color: var(--text3);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .footer-logout:hover { color: var(--text2); }
+
+  .toast {
+    position: fixed;
+    bottom: 44px; left: 50%; transform: translateX(-50%);
+    background: var(--text);
+    color: white;
+    font-size: 12px;
+    padding: 7px 16px;
+    border-radius: 99px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- API KEY SCREEN -->
+<div id="key-screen">
+  <div class="logo">Dissertation Agent</div>
+  <div class="logo-sub">AI writing assistant for your dissertation</div>
+  <div class="field">
+    <div class="key-label">Enter your Anthropic API key to get started</div>
+    <div class="key-input-row">
+      <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." />
+      <button class="btn-word" onclick="saveKey()">Save</button>
+    </div>
+    <div class="key-note">Your key is stored locally in this browser only and never sent anywhere except Anthropic's API. <a href="https://console.anthropic.com/settings/keys" target="_blank">Get a key →</a></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('intro')">Introduction</button>
+    <button class="tab" onclick="switchTab('rnd')">Results &amp; Discussion</button>
+  </div>
+
+  <!-- INTRO PANEL -->
+  <div id="panel-intro" class="panel">
+    <div class="word-row">
+      <span class="word-row-label">Read selected text from document</span>
+      <button class="btn-word" onclick="readSelection('intro-claims')">Read selection</button>
+    </div>
+    <div class="field">
+      <div class="lbl">Dissertation topic / title</div>
+      <input type="text" id="intro-topic" placeholder="e.g. AEM water electrolysis for green hydrogen" />
+    </div>
+    <div class="row2">
+      <div class="field">
+        <div class="lbl">Research field</div>
+        <input type="text" id="intro-field" placeholder="e.g. electrochemistry" />
+      </div>
+      <div class="field">
+        <div class="lbl">Target length</div>
+        <select id="intro-length">
+          <option value="400">Short (~400 w)</option>
+          <option value="800" selected>Medium (~800 w)</option>
+          <option value="1400">Long (~1400 w)</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <div class="lbl">Key themes / subtopics</div>
+      <textarea id="intro-themes" placeholder="e.g. alkaline vs AEM electrolysis, membrane degradation, iridium-free catalysts, current density targets..."></textarea>
+    </div>
+    <div class="field">
+      <div class="lbl">Findings to foreshadow (optional)</div>
+      <textarea id="intro-claims" style="min-height:56px;" placeholder="e.g. NiFe electrodes achieve 1 A/cm² at 1.8V with &lt;5% degradation over 1000h..."></textarea>
+    </div>
+    <div class="field">
+      <div class="lbl">Citation style</div>
+      <select id="intro-cite">
+        <option value="numbered">Numbered [1], [2]</option>
+        <option value="author-year">Author-year (Smith, 2021)</option>
+        <option value="inline-url">Inline URL</option>
+      </select>
+    </div>
+    <button class="btn-run" id="btn-intro" onclick="runIntro()">Generate with live literature search</button>
+    <div class="status" id="status-intro"></div>
+  </div>
+
+  <!-- R&D PANEL -->
+  <div id="panel-rnd" class="panel" style="display:none;">
+    <div class="word-row">
+      <span class="word-row-label">Read selected text from document</span>
+      <button class="btn-word" onclick="readSelection('rnd-existing')">Read selection</button>
+    </div>
+    <div class="field">
+      <div class="lbl">Existing results &amp; discussion text</div>
+      <textarea id="rnd-existing" style="min-height:100px;" placeholder="Paste or read from document above..."></textarea>
+    </div>
+    <div class="field">
+      <div class="lbl">Task</div>
+      <select id="rnd-task">
+        <option value="extend">Extend — deeper mechanistic interpretation</option>
+        <option value="compare">Compare with literature</option>
+        <option value="both">Both — interpret + compare</option>
+        <option value="write">Write full discussion from summary</option>
+      </select>
+    </div>
+    <div class="field">
+      <div class="lbl">Upload reaction schemes (PNG / JPG)</div>
+      <div class="upload-zone" onclick="document.getElementById('scheme-input').click()">
+        <input type="file" id="scheme-input" accept="image/*" multiple onchange="handleSchemes(event)" />
+        <div class="upload-zone-lbl">Click to upload — multiple OK</div>
+      </div>
+      <div class="thumb-grid" id="thumb-grid"></div>
+    </div>
+    <div class="field">
+      <div class="lbl">Additional context</div>
+      <textarea id="rnd-context" style="min-height:56px;" placeholder="e.g. 1M KOH, 25-80°C, stainless steel substrate, 2 mg/cm² loading..."></textarea>
+    </div>
+    <button class="btn-run" id="btn-rnd" onclick="runRnd()">Extend &amp; interpret results</button>
+    <div class="status" id="status-rnd"></div>
+  </div>
+
+  <!-- OUTPUT (shared) -->
+  <div id="out-area" style="display:none; padding: 0 14px 80px;">
+    <div class="out-card">
+      <div class="out-hdr">
+        <span class="out-hdr-title" id="out-label">Output</span>
+        <div class="out-hdr-btns">
+          <button class="btn-insert" id="btn-insert" onclick="insertIntoWord()">Insert into Word</button>
+          <button class="btn-sm" onclick="copyOut()">Copy</button>
+          <button class="btn-sm" onclick="clearOut()">Clear</button>
+        </div>
+      </div>
+      <div class="out-body" id="out-text"></div>
+    </div>
+    <div class="refine-wrap">
+      <input type="text" id="refine-input" placeholder="Refine: 'More concise', 'Translate to German', 'More on degradation'..." />
+      <button id="btn-refine" onclick="refine()">Refine</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="footer-name">Dissertation Agent</span>
+    <button class="footer-logout" onclick="logout()">Change API key</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var schemes = [];
+var history = [];
+var apiKey = '';
+var officeReady = false;
+
+// ── OFFICE INIT ──
+Office.onReady(function(info) {
+  officeReady = (info.host === Office.HostType.Word);
+  // Update UI based on whether we're actually in Word
+  if (!officeReady) {
+    document.querySelectorAll('.word-row').forEach(function(el) {
+      el.querySelector('.word-row-label').textContent = 'Running outside Word — paste text manually';
+      var btn = el.querySelector('.btn-word');
+      btn.disabled = true;
+    });
+    document.getElementById('btn-insert').disabled = true;
+    document.getElementById('btn-insert').title = 'Only works inside Word';
+  }
+  init();
+});
+
+function init() {
+  var stored = localStorage.getItem('dissertation_agent_key');
+  if (stored) {
+    apiKey = stored;
+    showApp();
+  }
+}
+
+function saveKey() {
+  var val = document.getElementById('api-key-input').value.trim();
+  if (!val.startsWith('sk-ant-')) { showToast('Key should start with sk-ant-'); return; }
+  apiKey = val;
+  localStorage.setItem('dissertation_agent_key', val);
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('key-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+function logout() {
+  localStorage.removeItem('dissertation_agent_key');
+  apiKey = '';
+  document.getElementById('api-key-input').value = '';
+  document.getElementById('key-screen').style.display = '';
+  document.getElementById('app').style.display = 'none';
+}
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(function(el, i) {
+    el.classList.toggle('active', (i===0&&t==='intro')||(i===1&&t==='rnd'));
+  });
+  document.getElementById('panel-intro').style.display = t==='intro' ? '' : 'none';
+  document.getElementById('panel-rnd').style.display = t==='rnd' ? '' : 'none';
+}
+
+// ── WORD: READ SELECTION ──
+function readSelection(targetId) {
+  if (!officeReady) return;
+  Word.run(function(context) {
+    var sel = context.document.getSelection();
+    sel.load('text');
+    return context.sync().then(function() {
+      var t = sel.text.trim();
+      if (t) {
+        document.getElementById(targetId).value = t;
+        showToast('Text read from document');
+      } else {
+        showToast('No text selected in Word');
+      }
+    });
+  }).catch(function(err) { showToast('Error: ' + err.message); });
+}
+
+// ── WORD: INSERT OUTPUT ──
+function insertIntoWord() {
+  if (!officeReady) { showToast('Only works inside Word'); return; }
+  var text = document.getElementById('out-text').textContent;
+  if (!text) return;
+  var btn = document.getElementById('btn-insert');
+  btn.disabled = true;
+  btn.textContent = 'Inserting...';
+
+  Word.run(function(context) {
+    var sel = context.document.getSelection();
+    sel.insertText(text, Word.InsertLocation.end);
+    return context.sync();
+  }).then(function() {
+    btn.disabled = false;
+    btn.textContent = 'Insert into Word';
+    showToast('Inserted into document');
+  }).catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = 'Insert into Word';
+    showToast('Error: ' + err.message);
+  });
+}
+
+// ── SCHEMES ──
+function handleSchemes(e) {
+  Array.from(e.target.files).forEach(function(f) {
+    var r = new FileReader();
+    r.onload = function(ev) {
+      schemes.push({ name: f.name, data: ev.target.result.split(',')[1], type: f.type });
+      renderThumbs();
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function renderThumbs() {
+  document.getElementById('thumb-grid').innerHTML = schemes.map(function(s, i) {
+    return '<div class="thumb"><img src="data:' + s.type + ';base64,' + s.data + '" />' +
+      '<button class="thumb-rm" onclick="removeScheme(' + i + ')">x</button></div>';
+  }).join('');
+}
+
+function removeScheme(i) { schemes.splice(i, 1); renderThumbs(); }
+
+// ── STATUS ──
+function setStatus(id, msg, loading) {
+  var el = document.getElementById(id);
+  el.innerHTML = loading ? '<div class="spin"></div>' + msg : msg;
+}
+
+// ── API CALL ──
+async function callAPI(system, userContent, useSearch) {
+  var body = {
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 1000,
+    system: system,
+    messages: history.concat([{ role: 'user', content: userContent }])
+  };
+  if (useSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+
+  var resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-allow-browser': 'true'
+    },
+    body: JSON.stringify(body)
+  });
+
+  var data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+
+  var text = (data.content || [])
+    .filter(function(b) { return b.type === 'text'; })
+    .map(function(b) { return b.text; })
+    .join('\n');
+
+  history.push({ role: 'user', content: userContent });
+  history.push({ role: 'assistant', content: data.content });
+  return text;
+}
+
+// ── INTRODUCTION ──
+async function runIntro() {
+  var topic  = document.getElementById('intro-topic').value.trim();
+  var field  = document.getElementById('intro-field').value.trim();
+  var themes = document.getElementById('intro-themes').value.trim();
+  var claims = document.getElementById('intro-claims').value.trim();
+  var words  = document.getElementById('intro-length').value;
+  var cite   = document.getElementById('intro-cite').value;
+  if (!topic) { showToast('Please enter a topic'); return; }
+
+  history = [];
+  document.getElementById('btn-intro').disabled = true;
+  setStatus('status-intro', 'Searching literature...', true);
+  document.getElementById('out-area').style.display = 'none';
+
+  var citeMap = {
+    'numbered':    '[1], [2]',
+    'author-year': '(Author, Year)',
+    'inline-url':  '[Title](URL)'
+  };
+
+  var system =
+    'You are an expert academic writer specialising in ' + (field || 'chemistry') + '.\n' +
+    'Task: write a rigorous dissertation introduction.\n\n' +
+    'RULES:\n' +
+    '- Use web_search at least 4-6 times to find real, recent, peer-reviewed sources covering different aspects.\n' +
+    '- Fact-check every major claim. Hedge anything you cannot verify ("has been reported", "it has been suggested").\n' +
+    '- Cite using ' + citeMap[cite] + ' format. Append a numbered reference list with titles and URLs at the end.\n' +
+    '- Target approximately ' + words + ' words for the main text.\n' +
+    '- Structure: (1) broad context and motivation, (2) state of the art, (3) key challenges and gaps, (4) objectives.\n' +
+    '- Formal academic English. Past tense for established knowledge, present for current state.\n' +
+    '- Never fabricate paper titles, authors, or DOIs. Only cite what you actually found via search.';
+
+  var userMsg =
+    'Write the introduction for my dissertation.\n\n' +
+    'Title: ' + topic + '\n' +
+    'Field: ' + (field || 'not specified') + '\n' +
+    'Key themes: ' + (themes || 'not specified') + '\n' +
+    (claims ? 'Findings to foreshadow: ' + claims + '\n' : '') +
+    '\nSearch the literature thoroughly before writing. Verify all claims.';
+
+  try {
+    var result = await callAPI(system, userMsg, true);
+    showOutput(result, 'Introduction');
+    setStatus('status-intro', 'Done. Refine below or insert into Word.');
+  } catch(err) {
+    setStatus('status-intro', 'Error: ' + err.message);
+  }
+  document.getElementById('btn-intro').disabled = false;
+}
+
+// ── RESULTS & DISCUSSION ──
+async function runRnd() {
+  var existing = document.getElementById('rnd-existing').value.trim();
+  var task     = document.getElementById('rnd-task').value;
+  var context  = document.getElementById('rnd-context').value.trim();
+  if (!existing && schemes.length === 0) {
+    showToast('Please paste text or upload a scheme');
+    return;
+  }
+
+  history = [];
+  document.getElementById('btn-rnd').disabled = true;
+  setStatus('status-rnd', 'Analysing schemes and generating...', true);
+  document.getElementById('out-area').style.display = 'none';
+
+  var taskMap = {
+    extend:  'Extend the existing text with deeper mechanistic interpretation. Explain underlying chemistry, discuss unexpected observations, propose mechanistic pathways supported by the data.',
+    compare: 'Search the literature (use web_search at least 3-4 times) and compare results to published work. Contextualise findings, identify agreement or disagreement, explain discrepancies.',
+    both:    'Do both: (1) extend with mechanistic interpretation AND (2) search literature to compare and contextualise.',
+    write:   'Write a complete discussion section from scratch based on the data summary and schemes. Include mechanistic interpretation and literature comparison (use web_search).'
+  };
+
+  var useSearch = (task === 'compare' || task === 'both' || task === 'write');
+
+  var system =
+    'You are an expert chemist and academic writer specialising in electrochemistry and reaction mechanisms.\n' +
+    'Task: ' + taskMap[task] + '\n\n' +
+    'RULES:\n' +
+    '- Analyse any reaction scheme images: identify reagents, intermediates, products, conditions, mechanistic arrows.\n' +
+    '- When using web_search, find relevant papers. Cite as (Author, Year) with a reference list at the end.\n' +
+    '- Formal academic English with hedged language where appropriate (suggests, indicates, is consistent with).\n' +
+    '- Do not fabricate data, mechanisms, or references.\n' +
+    '- Integrate scheme interpretation naturally into the discussion text.';
+
+  var blocks = [];
+  schemes.forEach(function(s, i) {
+    blocks.push({ type: 'image', source: { type: 'base64', media_type: s.type, data: s.data } });
+    blocks.push({ type: 'text', text: '[Figure ' + (i+1) + ': ' + s.name + ']' });
+  });
+  blocks.push({ type: 'text', text:
+    (existing ? 'Existing text:\n"""\n' + existing + '\n"""\n\n' : '') +
+    (context  ? 'Additional context:\n' + context + '\n\n' : '') +
+    'Please ' + taskMap[task]
+  });
+
+  try {
+    var result = await callAPI(system, blocks, useSearch);
+    showOutput(result, 'Results & Discussion');
+    setStatus('status-rnd', 'Done. Refine below or insert into Word.');
+  } catch(err) {
+    setStatus('status-rnd', 'Error: ' + err.message);
+  }
+  document.getElementById('btn-rnd').disabled = false;
+}
+
+// ── REFINE ──
+async function refine() {
+  var instruction = document.getElementById('refine-input').value.trim();
+  if (!instruction || history.length === 0) return;
+  var btn = document.getElementById('btn-refine');
+  btn.disabled = true;
+  document.getElementById('out-text').textContent += '\n\n[Refining...]\n';
+  try {
+    var result = await callAPI('', instruction, false);
+    document.getElementById('out-text').textContent = result;
+    document.getElementById('refine-input').value = '';
+  } catch(err) {
+    document.getElementById('out-text').textContent += '\nError: ' + err.message;
+  }
+  btn.disabled = false;
+}
+
+// ── OUTPUT HELPERS ──
+function showOutput(text, label) {
+  document.getElementById('out-label').textContent = label;
+  document.getElementById('out-text').textContent = text;
+  var area = document.getElementById('out-area');
+  area.style.display = '';
+  area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function copyOut() {
+  navigator.clipboard.writeText(document.getElementById('out-text').textContent)
+    .then(function() { showToast('Copied to clipboard'); })
+    .catch(function() {
+      var ta = document.createElement('textarea');
+      ta.value = document.getElementById('out-text').textContent;
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      showToast('Copied to clipboard');
+    });
+}
+
+function clearOut() {
+  document.getElementById('out-area').style.display = 'none';
+  history = [];
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2000);
+}
+</script>
+</body>
+</html>
